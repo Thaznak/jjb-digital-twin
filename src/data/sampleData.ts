@@ -30,6 +30,7 @@ export function sampleClub(): ClubConfig {
   for (let y = 6; y < 12 && n < 20; y++) for (let x = 7; x < 13 && n < 20; x++) if (y < 11 || x > 9) buildings.push({ id: `tatami-${n++}`, type: 'tatami', x, y });
   buildings.push({ id: 'vest-1', type: 'vestiaire', x: 4, y: 6 });
   buildings.push({ id: 'vest-2', type: 'vestiaire', x: 4, y: 9 });
+  buildings.push({ id: 'accueil-1', type: 'accueil', x: 4, y: 12 });
   buildings.push({ id: 'parking-1', type: 'parking', x: 14, y: 13 });
   return {
     name: 'Club fictif de JJB',
@@ -63,7 +64,7 @@ export function sampleClub(): ClubConfig {
     ],
     fees: { adultMonthly: 45, kidMonthly: 30, registrationFee: 40 },
     buildings,
-    market: { baseSignupsPerMonth: 4.2, kidSignupShare: 0.3, baseChurnMonthly: 0.035, feeElasticity: 1.5 },
+    market: { baseSignupsPerMonth: 3.7, kidSignupShare: 0.3, baseChurnMonthly: 0.035, feeElasticity: 1.5 },
     history: [],
   };
 }
