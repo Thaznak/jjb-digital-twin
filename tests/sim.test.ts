@@ -66,6 +66,15 @@ describe('buildings change capacity and costs', () => {
     expect(after.bottleneck).toBe('vestiaires');
     expect(after.monthlyCost).toBeLessThan(before.monthlyCost);
   });
+  it('a shop adds a margin per member', () => {
+    const noShop = sampleClub();
+    noShop.buildings = noShop.buildings.filter((b) => b.type !== 'boutique');
+    const base = new ClubSim(noShop, testEnv(), { startDate: '2027-01-01', seed: 3 }).runMonths(3);
+    const c = sampleClub();
+    const shop = new ClubSim(c, testEnv(), { startDate: '2027-01-01', seed: 3 }).runMonths(3);
+    expect(shop[0].revenue - base[0].revenue).toBeGreaterThan(100);
+    expect(facilities(c.buildings).revenuePerMember).toBe(1.5);
+  });
   it('no dojo means no class', () => {
     expect(facilities([{ id: 'v', type: 'vestiaire', x: 0, y: 0 }]).slotCapacity).toBe(0);
   });

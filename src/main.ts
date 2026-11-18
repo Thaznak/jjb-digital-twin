@@ -9,12 +9,18 @@ import { renderDashboard } from './ui/dashboard';
 import { DataPanel } from './ui/dataPanel';
 import { ScenarioPanel } from './ui/scenarioPanel';
 import { ExpansionPanel } from './ui/expansionPanel';
-import { dateLabel, dot, el, eur, esc, int, pct, type State } from './ui/format';
+import { dateLabel, dot, el, eur, esc, hour, int, pct, type State } from './ui/format';
 
 const app = document.getElementById('app')!;
 app.innerHTML = `
+  <header class="masthead">
+    <h1>Tatami Twin</h1>
+    <span class="sep" aria-hidden="true"></span>
+    <div class="kicker">Simulation de club<br>Jiu-jitsu brésilien · <span id="club-name"></span></div>
+    <div class="stripes" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="tagline">Encadrer · Enseigner · Développer<br>votre communauté</div>
+  </header>
   <header class="topbar">
-    <div class="brand"><span class="belt-mark" aria-hidden="true"></span>Tatami Twin <small id="club-name"></small></div>
     <div class="clock"><span id="date"></span>
       <div class="speed" role="group" aria-label="Vitesse">
         <button data-speed="0" aria-pressed="false" title="Pause">II</button>
@@ -96,7 +102,7 @@ phaser.events.on('step', (_t: number, dt: number) => game.tick(dt));
 const toolbar = el(app, '#toolbar');
 const tools: [Tool, string, string][] = [
   [null, 'Observer', 'glisser, molette'],
-  ...(['tatami', 'vestiaire', 'accueil', 'parking'] as BuildingType[]).map((t) => [t, BUILDING_SPECS[t].label, `${eur(BUILDING_SPECS[t].capex)} · ${BUILDING_SPECS[t].monthlyCost} €/mois`] as [Tool, string, string]),
+  ...(['tatami', 'vestiaire', 'accueil', 'boutique', 'parking'] as BuildingType[]).map((t) => [t, BUILDING_SPECS[t].label, `${eur(BUILDING_SPECS[t].capex)} · ${BUILDING_SPECS[t].monthlyCost} €/mois`] as [Tool, string, string]),
   ['supprimer', 'Retirer', 'sans remboursement'],
 ];
 toolbar.innerHTML = tools.map(([t, l, s]) => `<button class="tool" data-tool="${t ?? ''}" aria-pressed="${t === null}"><b>${l}</b><span>${s}</span></button>`).join('') + '<span class="hint">Les tatamis se posent sur le plancher du dojo.</span>';
@@ -161,22 +167,38 @@ function refreshHud() {
     .map(([l, v, s]) => `<div class="kpi" data-state="${s}"><span>${dot(s as State)}${l}</span><b>${v}</b></div>`)
     .join('');
   const w = r.weather;
-  const f = r.factors;
-  const total = f.reduce((a, x) => a * x.value, 1);
+  const total = r.factors.reduce((acc, x) => acc * x.value, 1);
+  const sorted = [...r.fills].sort((x, y) => y.slot.start - x.slot.start);
+  const evening = sorted[0];
+  const cap = evening?.capacity ?? 0;
+  const present = evening ? Math.round(evening.attendees) : 0;
+  const ratio = evening && cap ? evening.demand / cap : 0;
+  const level: State = ratio > 1.15 ? 'crise' : ratio > 0.95 ? 'tension' : 'sain';
+  const waiting = Math.round(r.fills.reduce((acc, f) => acc + Math.max(0, f.demand - f.capacity), 0));
+  const on = cap ? Math.round((present / cap) * 20) : 0;
+  const ico = (path: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2" aria-hidden="true">${path}</svg>`;
+  const meteo = w.precipMm > 2 ? (w.tempMaxC < 2 ? 'Neige' : 'Pluie') : w.tempMaxC >= 28 ? 'Chaleur' : 'Sec';
   el(app, '#factors').innerHTML = `
-    <h3>Demande du jour</h3>
-    <div class="muted">${w.precipMm > 2 ? (w.tempMaxC < 2 ? 'Neige' : 'Pluie') : w.tempMaxC >= 28 ? 'Chaleur' : 'Sec'}, ${Math.round(w.tempMaxC)} °C, ${w.precipMm.toFixed(1)} mm · ${w.source === 'open-meteo' ? 'Open-Meteo (réel)' : 'normales climatiques'}</div>
-    ${f
-      .map((x) => {
-        const d = x.value - 1;
-        const width = Math.min(50, Math.abs(d) * 100);
-        return `<div class="factor"><span>${x.label}</span><b>×${x.value.toFixed(2)}</b><div class="bar"><i class="${d < 0 ? 'neg' : ''}" style="${d < 0 ? `left:${50 - width}%;width:${width}%` : `width:${width}%`}"></i></div></div>`;
-      })
-      .join('')}
-    <div class="factor"><span><b>Effet total</b></span><b>×${total.toFixed(2)}</b></div>
-    <div class="muted">${r.fills.length ? `${r.fills.length} cours aujourd’hui, ${Math.round(r.fills.reduce((a, x) => a + x.attendees, 0))} présents` : 'Pas de cours aujourd’hui'}</div>
+    <div class="row-i">${ico('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>')}
+      <div class="title">${evening ? 'Cours du soir' : 'Pas de cours'}<small>${evening ? `${hour(evening.slot.start)} · ${esc(evening.slot.label)}` : 'Le dojo se repose aujourd’hui'}</small></div><span aria-hidden="true">›</span></div>
+    <div class="row-i">${ico('<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 2-5 4-5s6 2 6 5"/>')}
+      <div class="title">Capacité</div><div class="big">${present} / ${cap}</div>
+      <div class="segbar ${level}">${Array.from({ length: 20 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div></div>
+    <div class="row-i">${ico('<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 2-5 4-5s6 2 6 5"/>')}
+      <div class="title">Accueil</div><span class="wait ${waiting ? '' : 'none'}">${waiting ? `${waiting} en attente` : 'Personne en attente'}</span></div>
+    <div class="meteo">${meteo}, ${Math.round(w.tempMaxC)} °C, ${w.precipMm.toFixed(1)} mm · ${w.source === 'open-meteo' ? 'Open-Meteo (réel)' : 'normales climatiques'}</div>
+    <div class="facts">${r.factors.map((x) => `<div><span>${x.label}</span><b>×${x.value.toFixed(2)}</b></div>`).join('')}</div>
+    <div class="facts" style="grid-template-columns:1fr auto"><span>Effet total sur la demande</span><b>×${total.toFixed(2)}</b></div>
+    ${LEGEND.map((l) => `<div class="legend-s" data-active="${l.state === level && !!evening}">${dot(l.state)}${l.icon}<div><b>${l.title}</b><span>${l.text}</span></div></div>`).join('')}
   `;
 }
+
+const fig = (d: string) => `<svg viewBox="0 0 34 24" width="34" height="24" fill="#141414" aria-hidden="true">${d}</svg>`;
+const LEGEND: { state: State; title: string; text: string; icon: string }[] = [
+  { state: 'sain', title: 'Sain', text: 'Entraînement fluide, ambiance constructive.', icon: fig('<circle cx="8" cy="5" r="3"/><circle cx="26" cy="5" r="3"/><path d="M3 22l2-12h6l3 6-3 6zM31 22l-2-12h-6l-3 6 3 6z"/>') },
+  { state: 'tension', title: 'Tension', text: 'Créneau plein, fatigue ou charge à surveiller.', icon: fig('<circle cx="7" cy="7" r="3"/><circle cx="27" cy="7" r="3"/><path d="M2 22l4-11 7 3 4-2-3 10zM32 22l-4-11-7 3-4-2 3 10z"/>') },
+  { state: 'crise', title: 'Crise', text: 'Saturation, départs ou trésorerie négative. Agir.', icon: fig('<circle cx="10" cy="6" r="3"/><circle cx="24" cy="13" r="3"/><path d="M4 22l5-12 12 2-4 4 13 6zM14 22l6-5 10 5z"/>') },
+];
 
 function refreshAll() {
   refreshHud();

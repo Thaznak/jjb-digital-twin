@@ -15,11 +15,14 @@ export const BUILDING_SPECS: Record<BuildingType, BuildingSpec> = {
   tatami: { type: 'tatami', label: 'Tatami', w: 1, h: 1, capex: 140, monthlyCost: 2, description: '+2 places par créneau (une paire).' },
   vestiaire: { type: 'vestiaire', label: 'Vestiaires', w: 2, h: 2, capex: 4500, monthlyCost: 70, description: '+25 personnes en même temps.' },
   accueil: { type: 'accueil', label: 'Accueil', w: 2, h: 1, capex: 1500, monthlyCost: 20, description: '+15 % de conversion des essais (une fois).' },
+  boutique: { type: 'boutique', label: 'Boutique', w: 2, h: 2, capex: 3000, monthlyCost: 40, description: '+1,5 € de marge par adhérent et par mois (gi, rashguards).' },
   parking: { type: 'parking', label: 'Parking', w: 2, h: 2, capex: 0, monthlyCost: 120, description: '+6 % d’attractivité (deux au maximum).' },
 };
 
 export const PLACES_PER_TATAMI = 2;
 export const PEOPLE_PER_LOCKER_ROOM = 25;
+/** Gross margin of the shop, EUR per member per month. */
+export const SHOP_MARGIN_PER_MEMBER = 1.5;
 
 export function footprint(b: Pick<Building, 'type' | 'x' | 'y'>): { x: number; y: number }[] {
   const s = BUILDING_SPECS[b.type];
@@ -55,6 +58,8 @@ export interface Facilities {
   conversionBonus: number; // multiplier on sign-ups
   attractiveness: number; // multiplier on sign-ups
   monthlyCost: number;
+  /** Extra revenue, EUR per member per month (shop). */
+  revenuePerMember: number;
 }
 
 export function facilities(buildings: Building[]): Facilities {
@@ -76,5 +81,6 @@ export function facilities(buildings: Building[]): Facilities {
     conversionBonus: count('accueil') > 0 ? 1.15 : 1,
     attractiveness: 1 + 0.06 * Math.min(2, count('parking')),
     monthlyCost,
+    revenuePerMember: count('boutique') > 0 ? SHOP_MARGIN_PER_MEMBER : 0,
   };
 }

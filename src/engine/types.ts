@@ -47,7 +47,7 @@ export interface Fees {
   registrationFee: number;
 }
 
-export type BuildingType = 'dojo' | 'tatami' | 'vestiaire' | 'accueil' | 'parking';
+export type BuildingType = 'dojo' | 'tatami' | 'vestiaire' | 'accueil' | 'parking' | 'boutique';
 
 export interface Building {
   id: string;

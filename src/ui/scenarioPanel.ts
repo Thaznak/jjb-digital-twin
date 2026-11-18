@@ -107,7 +107,7 @@ export class ScenarioPanel {
       </div>
       <h3>Trésorerie comparée</h3>
       <canvas class="chart" id="scn-cash"></canvas>
-      ${legend([{ label: 'Référence', color: '#55607A', dashed: true }, { label: 'Scénario', color: '#3E7CB1' }])}
+      ${legend([{ label: 'Référence', color: '#9A9C9F', dashed: true }, { label: 'Scénario', color: '#141414' }])}
       <h3>Adhérents comparés</h3>
       <canvas class="chart" id="scn-members"></canvas>
       <h3>Alertes sur la carte</h3>
@@ -123,12 +123,12 @@ export class ScenarioPanel {
   private drawCharts(c: Comparison) {
     const labels = c.baseline.map((m) => monthLabel(m.month));
     lineChart(this.root.querySelector('#scn-cash')!, labels, [
-      { label: 'Référence', color: '#55607A', values: c.baseline.map((m) => m.cash), dashed: true },
-      { label: 'Scénario', color: '#3E7CB1', values: c.scenario.map((m) => m.cash) },
+      { label: 'Référence', color: '#9A9C9F', values: c.baseline.map((m) => m.cash), dashed: true },
+      { label: 'Scénario', color: '#141414', values: c.scenario.map((m) => m.cash) },
     ], (n) => `${Math.round(n / 100) / 10}k€`, { zeroLine: true });
     lineChart(this.root.querySelector('#scn-members')!, labels, [
-      { label: 'Référence', color: '#55607A', values: c.baseline.map((m) => m.members), dashed: true },
-      { label: 'Scénario', color: '#3E7CB1', values: c.scenario.map((m) => m.members) },
+      { label: 'Référence', color: '#9A9C9F', values: c.baseline.map((m) => m.members), dashed: true },
+      { label: 'Scénario', color: '#141414', values: c.scenario.map((m) => m.members) },
     ], (n) => String(Math.round(n)));
   }
 

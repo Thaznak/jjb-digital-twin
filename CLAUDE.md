@@ -24,6 +24,6 @@ Le moteur ne doit jamais importer `/render`, `/ui` ni `phaser`.
 ## Règles
 
 - Données personnelles : uniquement des identifiants anonymes. L'import CSV supprime les colonnes nom, e-mail, téléphone, adresse. Ne jamais commiter de données réelles.
-- Les assets sont dessinés en code à partir de la palette de `docs/DIRECTION_ARTISTIQUE.md`.
+- Les assets sont dessinés en code à partir de la palette de `docs/DIRECTION_ARTISTIQUE.md` (direction « Académie »).
 - Toute nouvelle règle métier va dans `/engine` avec un test.
 - Textes de l'UI en français, phrases courtes, au présent.

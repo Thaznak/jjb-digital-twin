@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { BUILDING_SPECS, canPlace, footprint, type Alert, type Building, type BuildingType, type Belt } from '../engine';
-import { BELT_COLORS, C, seasonGround, shade } from './palette';
+import { BUILDING_SPECS, canPlace, footprint, type Alert, type Belt, type Building, type BuildingType } from '../engine';
+import { BELT_HEX, C, seasonGround, shade } from './palette';
 import { MAP_SIZE, TILE_H, toScreen, toTile } from './iso';
+import { HAIR_COLORS, personGrid, SKINS, specKey, type Hair, type PersonSpec } from './pixelSprites';
 
 export type Tool = BuildingType | 'supprimer' | null;
 
@@ -17,28 +18,36 @@ export interface Weatherish {
 }
 
 type Pt = { x: number; y: number };
+type G = Phaser.GameObjects.Graphics;
 
 const ORIGIN_Y = 60;
+
+interface Person {
+  img: Phaser.GameObjects.Image;
+  seated: boolean;
+}
 
 /** Renders the club. Holds no business logic: everything comes from /engine via setters. */
 export class ClubScene extends Phaser.Scene {
   private hooks!: SceneHooks;
   private buildings: Building[] = [];
   private tool: Tool = null;
-  private ground!: Phaser.GameObjects.Graphics;
+  private ground!: G;
   private buildingLayer!: Phaser.GameObjects.Container;
-  private ghost!: Phaser.GameObjects.Graphics;
-  private crackLayer!: Phaser.GameObjects.Graphics;
+  private ghost!: G;
+  private crackLayer!: G;
   private badgeLayer!: Phaser.GameObjects.Container;
-  private people: Phaser.GameObjects.Image[] = [];
+  private people: Person[] = [];
   private rain!: Phaser.GameObjects.Particles.ParticleEmitter;
   private snow!: Phaser.GameObjects.Particles.ParticleEmitter;
   private heat!: Phaser.GameObjects.Rectangle;
   private month = -1;
+  private wet = false;
   private alerts: Alert[] = [];
   private dragStart: { x: number; y: number; sx: number; sy: number } | null = null;
   private ready = false;
   private pending: (() => void)[] = [];
+  private seq = 0;
 
   constructor() {
     super('club');
@@ -48,7 +57,6 @@ export class ClubScene extends Phaser.Scene {
     this.hooks = data.hooks;
   }
 
-  /** Runs fn now if the scene is ready, otherwise after create(). */
   whenReady(fn: () => void) {
     if (this.ready) fn();
     else this.pending.push(fn);
@@ -56,7 +64,7 @@ export class ClubScene extends Phaser.Scene {
 
   create() {
     this.makeTextures();
-    this.cameras.main.setBackgroundColor(C.slate);
+    this.cameras.main.setBackgroundColor(C.night);
     this.ground = this.add.graphics().setDepth(-10);
     this.buildingLayer = this.add.container(0, ORIGIN_Y);
     this.crackLayer = this.add.graphics().setDepth(5000);
@@ -67,23 +75,24 @@ export class ClubScene extends Phaser.Scene {
     this.tweens.add({ targets: this.crackLayer, alpha: { from: 1, to: 0.55 }, duration: 900, yoyo: true, repeat: -1 });
 
     const cam = this.cameras.main;
-    cam.centerOn(0, ORIGIN_Y + (MAP_SIZE * TILE_H) / 2);
-    cam.setZoom(this.scale.width < 700 ? 0.6 : 1);
+    const narrow = this.scale.width < 700;
+    cam.setZoom(narrow ? 0.65 : 1.1);
+    // Leave room for the class card floating on the left.
+    cam.centerOn(narrow ? 0 : -150 / cam.zoom, ORIGIN_Y + (MAP_SIZE * TILE_H) / 2 - 10);
 
-    // Weather overlays, fixed to the screen.
-    const w = this.scale.width;
+    const w = Math.max(this.scale.width, 1600);
     this.rain = this.add.particles(0, -10, 'rain', {
-      x: { min: -100, max: Math.max(w, 1600) + 200 },
+      x: { min: -100, max: w + 200 },
       speedY: { min: 420, max: 560 },
       speedX: -90,
       lifespan: 1800,
       quantity: 3,
       frequency: 20,
-      alpha: { start: 0.55, end: 0.2 },
+      alpha: { start: 0.5, end: 0.15 },
       emitting: false,
     });
     this.snow = this.add.particles(0, -10, 'snow', {
-      x: { min: -50, max: Math.max(w, 1600) + 50 },
+      x: { min: -50, max: w + 50 },
       speedY: { min: 40, max: 80 },
       speedX: { min: -20, max: 20 },
       lifespan: 9000,
@@ -101,41 +110,53 @@ export class ClubScene extends Phaser.Scene {
     this.pending.splice(0).forEach((fn) => fn());
   }
 
-  // ---------- textures (all assets are drawn in code from the DA palette) ----------
+  // ---------- textures ----------
   private makeTextures() {
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0xbfd8ef, 1).fillRect(0, 0, 2, 10);
     g.generateTexture('rain', 2, 10);
     g.clear().fillStyle(0xffffff, 1).fillCircle(2, 2, 2);
     g.generateTexture('snow', 4, 4);
-    for (const [belt, color] of Object.entries(BELT_COLORS)) {
-      for (const kid of [false, true]) {
-        g.clear();
-        const s = kid ? 0.75 : 1;
-        const W = 14;
-        const H = Math.round(24 * s);
-        // shadow
-        g.fillStyle(0x000000, 0.25).fillEllipse(W / 2, H - 1, 12 * s, 4);
-        // legs
-        g.fillStyle(0xf2f0ea, 1).fillRect(3, H - 9 * s, 3, 8 * s).fillRect(8, H - 9 * s, 3, 8 * s);
-        // gi jacket
-        g.fillStyle(0xf7f5ef, 1).fillRoundedRect(2, 8 * s, 10, 10 * s, 2);
-        g.lineStyle(1, 0xc9c4b8, 1).strokeRoundedRect(2, 8 * s, 10, 10 * s, 2);
-        // belt: the only vivid colour
-        g.fillStyle(color, 1).fillRect(1, 14 * s, 12, 2.5);
-        if (belt === 'noire') g.fillStyle(C.crisis, 1).fillRect(9, 14 * s, 2, 2.5);
-        // head
-        g.fillStyle(0xd9a982, 1).fillCircle(7, 5 * s, 4 * s);
-        g.fillStyle(0x3b2a20, 1).fillRect(3 * s + 1, 1, 8 * s, 2);
-        g.generateTexture(`p-${belt}${kid ? '-k' : ''}`, W, H);
-      }
-    }
     g.destroy();
   }
 
+  /** Builds (once) the pixel-art texture of a practitioner. */
+  private personTexture(spec: PersonSpec): string {
+    const key = specKey(spec);
+    if (this.textures.exists(key)) return key;
+    const px = personGrid(spec);
+    const tex = this.textures.createCanvas(key, px[0].length, px.length);
+    if (!tex) return key;
+    const ctx = tex.getContext();
+    px.forEach((row, y) =>
+      row.forEach((c, x) => {
+        if (!c) return;
+        ctx.fillStyle = c;
+        ctx.fillRect(x, y, 1, 1);
+      }),
+    );
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    return key;
+  }
+
+  private randomSpec(belt: Belt, kid: boolean, rnd: () => number, pose: PersonSpec['pose']): PersonSpec {
+    const hairs: Hair[] = ['court', 'chignon', 'boucles', 'rase'];
+    return {
+      skin: SKINS[Math.floor(rnd() * SKINS.length)],
+      hair: hairs[Math.floor(rnd() * hairs.length)],
+      hairColor: HAIR_COLORS[Math.floor(rnd() * HAIR_COLORS.length)],
+      gi: rnd() < 0.6 ? 'blanc' : 'noir',
+      belt: BELT_HEX[belt],
+      kid,
+      beard: !kid && rnd() < 0.3,
+      pose,
+    };
+  }
+
   // ---------- ground ----------
-  private drawGround(month: number) {
-    if (month === this.month) return;
+  private drawGround(month: number, force = false) {
+    if (month === this.month && !force) return;
     this.month = month;
     const g = this.ground;
     g.clear();
@@ -143,13 +164,18 @@ export class ClubScene extends Phaser.Scene {
     for (let x = 0; x < MAP_SIZE; x++) {
       for (let y = 0; y < MAP_SIZE; y++) {
         const ring = x < 2 || y < 2 || x >= MAP_SIZE - 2 || y >= MAP_SIZE - 2;
-        const base = ring ? seasonC : (x + y) % 2 ? 0x55606c : 0x5b6672;
+        let base = ring ? seasonC : (x + y) % 2 ? C.floor : C.floor2;
+        if (this.wet && !ring) base = shade(base, 0.85);
         this.fillTile(g, x, y, base, ORIGIN_Y);
-        g.lineStyle(1, shade(base, 0.85), 0.6);
+        g.lineStyle(1, ring ? shade(seasonC, 0.85) : C.charcoal, 0.8);
         this.strokeTile(g, x, y, ORIGIN_Y);
+        // wet floor sparkle
+        if (this.wet && !ring && (x * 7 + y * 13) % 11 === 0) {
+          const c = toScreen(x + 0.5, y + 0.5);
+          g.fillStyle(0xdfe7ee, 0.35).fillEllipse(c.x, c.y + ORIGIN_Y, 14, 4);
+        }
       }
     }
-    // map edge thickness
     const L = toScreen(0, MAP_SIZE);
     const B = toScreen(MAP_SIZE, MAP_SIZE);
     const R = toScreen(MAP_SIZE, 0);
@@ -160,21 +186,81 @@ export class ClubScene extends Phaser.Scene {
   private tilePoints(x: number, y: number, w = 1, h = 1, oy = 0, lift = 0): Pt[] {
     return [toScreen(x, y), toScreen(x + w, y), toScreen(x + w, y + h), toScreen(x, y + h)].map((q) => ({ x: q.x, y: q.y + oy - lift }));
   }
-  private fillTile(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number, oy = 0) {
+  private fillTile(g: G, x: number, y: number, color: number, oy = 0) {
     g.fillStyle(color, 1).fillPoints(this.tilePoints(x, y, 1, 1, oy), true);
   }
-  private strokeTile(g: Phaser.GameObjects.Graphics, x: number, y: number, oy = 0) {
+  private strokeTile(g: G, x: number, y: number, oy = 0) {
     g.strokePoints(this.tilePoints(x, y, 1, 1, oy), true);
   }
 
-  /** Extruded box: top, left (south-west) and right (south-east) faces lit from top-left. */
-  private box(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, height: number, color: number, top?: number) {
+  /** Extruded box lit from the top-left. Returns its visible faces' corners for decoration. */
+  private box(g: G, x: number, y: number, w: number, h: number, height: number, color: number, top?: number, base?: number) {
     const [A, B, Cc, D] = this.tilePoints(x, y, w, h);
-    const up = (q: Pt) => ({ x: q.x, y: q.y - height });
+    const up = (q: Pt, d = height) => ({ x: q.x, y: q.y - d });
     g.fillStyle(color, 1).fillPoints([D, Cc, up(Cc), up(D)], true);
-    g.fillStyle(shade(color, 0.78), 1).fillPoints([Cc, B, up(B), up(Cc)], true);
-    g.fillStyle(top ?? shade(color, 1.12), 1).fillPoints([up(A), up(B), up(Cc), up(D)], true);
-    g.lineStyle(1, shade(color, 0.55), 0.8).strokePoints([up(A), up(B), up(Cc), up(D)], true);
+    g.fillStyle(shade(color, 0.8), 1).fillPoints([Cc, B, up(B), up(Cc)], true);
+    if (base !== undefined) {
+      // dark wainscot band at the bottom of the walls
+      g.fillStyle(base, 1).fillPoints([D, Cc, up(Cc, 8), up(D, 8)], true);
+      g.fillStyle(shade(base, 0.8), 1).fillPoints([Cc, B, up(B, 8), up(Cc, 8)], true);
+    }
+    g.fillStyle(top ?? shade(color, 1.1), 1).fillPoints([up(A), up(B), up(Cc), up(D)], true);
+    g.lineStyle(1, C.ink, 0.7).strokePoints([up(A), up(B), up(Cc), up(D)], true);
+    g.lineBetween(Cc.x, Cc.y, up(Cc).x, up(Cc).y);
+    return { A, B, Cc, D, up };
+  }
+
+  /** Point along the front-left face (D→C) at ratio t, raised by z. */
+  private onLeft(f: { Cc: Pt; D: Pt }, t: number, z: number): Pt {
+    return { x: f.D.x + (f.Cc.x - f.D.x) * t, y: f.D.y + (f.Cc.y - f.D.y) * t - z };
+  }
+  /** Point along the front-right face (C→B) at ratio t, raised by z. */
+  private onRight(f: { Cc: Pt; B: Pt }, t: number, z: number): Pt {
+    return { x: f.Cc.x + (f.B.x - f.Cc.x) * t, y: f.Cc.y + (f.B.y - f.Cc.y) * t - z };
+  }
+  /** Small parallelogram drawn flat on the front-left face. */
+  private leftPanel(g: G, f: { Cc: Pt; D: Pt }, t0: number, t1: number, z0: number, z1: number, color: number, alpha = 1) {
+    g.fillStyle(color, alpha).fillPoints([this.onLeft(f, t0, z0), this.onLeft(f, t1, z0), this.onLeft(f, t1, z1), this.onLeft(f, t0, z1)], true);
+  }
+  private rightPanel(g: G, f: { Cc: Pt; B: Pt }, t0: number, t1: number, z0: number, z1: number, color: number, alpha = 1) {
+    g.fillStyle(color, alpha).fillPoints([this.onRight(f, t0, z0), this.onRight(f, t1, z0), this.onRight(f, t1, z1), this.onRight(f, t0, z1)], true);
+  }
+
+  private plant(g: G, at: Pt, size = 1) {
+    g.fillStyle(C.pot, 1).fillRect(at.x - 6 * size, at.y - 9 * size, 12 * size, 9 * size);
+    g.fillStyle(shade(C.pot, 0.8), 1).fillRect(at.x, at.y - 9 * size, 6 * size, 9 * size);
+    for (let i = 0; i < 7; i++) {
+      const a = -Math.PI / 2 + (i - 3) * 0.42;
+      const len = (12 + (i % 3) * 4) * size;
+      g.fillStyle(i % 2 ? C.plant : C.plantDark, 1).fillEllipse(at.x + Math.cos(a) * len * 0.6, at.y - 10 * size + Math.sin(a) * len * 0.8, 6 * size, 11 * size);
+    }
+  }
+
+  private bench(g: G, x: number, y: number, len: number, alongX: boolean) {
+    const w = alongX ? len : 0.35;
+    const h = alongX ? 0.35 : len;
+    const [A, B, Cc, D] = this.tilePoints(x, y, w, h);
+    const up = (q: Pt, d: number) => ({ x: q.x, y: q.y - d });
+    g.fillStyle(C.ink, 1);
+    for (const q of [A, B, Cc, D]) g.fillRect(q.x - 1, q.y - 8, 2, 8);
+    g.fillStyle(C.wood, 1).fillPoints([up(A, 8), up(B, 8), up(Cc, 8), up(D, 8)], true);
+    g.fillStyle(shade(C.wood, 0.7), 1).fillPoints([up(D, 8), up(Cc, 8), up(Cc, 6), up(D, 6)], true);
+  }
+
+  private logo(g: G, at: Pt, size: number, color: number) {
+    // Three diagonal stripes, the club's mark (own design).
+    for (let i = 0; i < 3; i++) {
+      const x = at.x + i * size * 0.9;
+      g.fillStyle(i === 2 ? shade(color, 1.6) : color, 1).fillPoints(
+        [
+          { x, y: at.y },
+          { x: x + size * 0.5, y: at.y },
+          { x: x + size * 0.1, y: at.y + size * 1.2 },
+          { x: x - size * 0.4, y: at.y + size * 1.2 },
+        ],
+        true,
+      );
+    }
   }
 
   // ---------- buildings ----------
@@ -190,64 +276,80 @@ export class ClubScene extends Phaser.Scene {
       const g = this.add.graphics();
       const s = BUILDING_SPECS[b.type];
       switch (b.type) {
-        case 'dojo': {
-          // Cutaway room, Theme-Hospital style: wooden floor and two back walls.
-          const pts = this.tilePoints(b.x, b.y, s.w, s.h);
-          g.fillStyle(shade(C.hinoki, 0.7), 1).fillPoints([pts[3], pts[2], { x: pts[2].x, y: pts[2].y + 6 }, { x: pts[3].x, y: pts[3].y + 6 }], true);
-          g.fillStyle(shade(C.hinoki, 0.55), 1).fillPoints([pts[2], pts[1], { x: pts[1].x, y: pts[1].y + 6 }, { x: pts[2].x, y: pts[2].y + 6 }], true);
-          g.fillStyle(C.hinoki, 1).fillPoints(pts, true);
-          g.lineStyle(1, shade(C.hinoki, 0.8), 0.5);
-          for (let i = 1; i < s.w; i++) g.lineBetween(toScreen(b.x + i, b.y).x, toScreen(b.x + i, b.y).y, toScreen(b.x + i, b.y + s.h).x, toScreen(b.x + i, b.y + s.h).y);
-          const wallH = 46;
-          const A = pts[0];
-          const Bp = pts[1];
-          const D = pts[3];
-          g.fillStyle(C.linen, 1).fillPoints([A, D, { x: D.x, y: D.y - wallH }, { x: A.x, y: A.y - wallH }], true);
-          g.fillStyle(shade(C.linen, 0.85), 1).fillPoints([A, Bp, { x: Bp.x, y: Bp.y - wallH }, { x: A.x, y: A.y - wallH }], true);
-          // noren curtain and a timetable on the walls
-          const mid = { x: (A.x + D.x) / 2, y: (A.y + D.y) / 2 };
-          g.fillStyle(C.tatami, 1).fillPoints([{ x: mid.x - 18, y: mid.y - 9 - 40 }, { x: mid.x + 18, y: mid.y + 9 - 40 }, { x: mid.x + 18, y: mid.y + 9 - 22 }, { x: mid.x - 18, y: mid.y - 9 - 22 }], true);
-          g.lineStyle(1, C.linen, 1).lineBetween(mid.x, mid.y - 31, mid.x, mid.y - 13);
-          const mid2 = { x: (A.x + Bp.x) / 2, y: (A.y + Bp.y) / 2 };
-          g.fillStyle(C.slate, 1).fillPoints([{ x: mid2.x - 22, y: mid2.y + 11 - 38 }, { x: mid2.x + 22, y: mid2.y - 11 - 38 }, { x: mid2.x + 22, y: mid2.y - 11 - 20 }, { x: mid2.x - 22, y: mid2.y + 11 - 20 }], true);
-          g.lineStyle(1, C.gold, 0.9);
-          for (let i = 0; i < 3; i++) g.lineBetween(mid2.x - 16, mid2.y + 8 - 33 + i * 5, mid2.x + 16, mid2.y - 8 - 33 + i * 5);
+        case 'dojo':
+          this.drawDojo(g, b);
           g.setDepth(-5);
           this.buildingLayer.add(g);
           continue;
-        }
         case 'tatami': {
           const pts = this.tilePoints(b.x, b.y, 1, 1, 0, 2);
-          g.fillStyle(C.tatami, 1).fillPoints(pts, true);
-          g.lineStyle(1, shade(C.tatami, 1.35), 0.9).strokePoints(this.tilePoints(b.x + 0.08, b.y + 0.08, 0.84, 0.84, 0, 2), true);
+          g.fillStyle(C.mat, 1).fillPoints(pts, true);
+          g.lineStyle(1, C.matLine, 1).strokePoints(pts, true);
           break;
         }
         case 'vestiaire': {
-          this.box(g, b.x, b.y, s.w, s.h, 38, C.linen, shade(C.hinoki, 0.9));
-          const [, , Cc, D] = this.tilePoints(b.x, b.y, s.w, s.h);
-          const m = { x: (Cc.x + D.x) / 2, y: (Cc.y + D.y) / 2 };
-          g.fillStyle(C.tatami, 1).fillRect(m.x - 6, m.y - 26, 12, 22);
-          // gi pictogram
-          g.fillStyle(C.linen, 1).fillTriangle(m.x - 4, m.y - 22, m.x + 4, m.y - 22, m.x, m.y - 16).fillRect(m.x - 3, m.y - 17, 6, 7);
+          const f = this.box(g, b.x, b.y, s.w, s.h, 40, C.wallLight, C.roof, C.wallDark);
+          // wooden door + pictogram on the left face, lockers on the right face
+          this.leftPanel(g, f, 0.18, 0.42, 8, 32, shade(C.wood, 0.9));
+          this.leftPanel(g, f, 0.6, 0.86, 20, 30, C.ink);
+          const m = this.onLeft(f, 0.73, 25);
+          g.fillStyle(C.wallLight, 1).fillCircle(m.x - 3, m.y - 2, 1.5).fillCircle(m.x + 3, m.y - 4, 1.5);
+          g.fillRect(m.x - 4, m.y, 2, 4).fillRect(m.x + 2, m.y - 2, 2, 4);
+          for (let i = 0; i < 4; i++) {
+            this.rightPanel(g, f, 0.1 + i * 0.21, 0.27 + i * 0.21, 9, 34, C.wallMid);
+            this.rightPanel(g, f, 0.14 + i * 0.21, 0.2 + i * 0.21, 28, 30, C.wallDark);
+          }
           break;
         }
         case 'accueil': {
-          this.box(g, b.x, b.y, s.w, s.h, 28, shade(C.hinoki, 0.95), C.linen);
-          const [, , Cc, D] = this.tilePoints(b.x, b.y, s.w, s.h);
-          g.fillStyle(C.slate, 1).fillRect((Cc.x + D.x) / 2 - 10, (Cc.y + D.y) / 2 - 22, 20, 10);
-          g.fillStyle(C.gold, 1).fillRect((Cc.x + D.x) / 2 - 7, (Cc.y + D.y) / 2 - 19, 14, 2);
+          const f = this.box(g, b.x + 0.15, b.y + 0.25, s.w - 0.3, s.h - 0.5, 18, C.wood, C.wallLight);
+          this.leftPanel(g, f, 0.1, 0.9, 4, 6, shade(C.wood, 0.7));
+          // monitor on the counter
+          const top = { x: (f.A.x + f.Cc.x) / 2, y: (f.A.y + f.Cc.y) / 2 - 18 };
+          g.fillStyle(C.ink, 1).fillRect(top.x - 7, top.y - 12, 12, 9);
+          g.fillStyle(0x5a7fa8, 1).fillRect(top.x - 6, top.y - 11, 10, 7);
+          g.fillStyle(C.ink, 1).fillRect(top.x - 2, top.y - 3, 2, 3);
+          this.plant(g, this.onLeft(f, 0.06, 18), 0.6);
+          // receptionist standing behind the counter
+          const rnd = mulberry(hash(b.id));
+          const who = this.add.image(top.x + 12, top.y - 6, this.personTexture({ ...this.randomSpec('noire', false, rnd, 'debout'), gi: 'tshirt' })).setOrigin(0.5, 1);
+          who.setDepth(order(b) - 1);
+          this.buildingLayer.add(who);
+          break;
+        }
+        case 'boutique': {
+          const f = this.box(g, b.x, b.y, s.w, s.h, 40, C.wallLight, C.roof, C.wallDark);
+          // shelves with folded gis, white and black
+          for (let r = 0; r < 3; r++) {
+            this.leftPanel(g, f, 0.1, 0.55, 10 + r * 9, 11 + r * 9, shade(C.wood, 0.85));
+            for (let k = 0; k < 4; k++) this.leftPanel(g, f, 0.12 + k * 0.1, 0.2 + k * 0.1, 11 + r * 9, 16 + r * 9, (k + r) % 2 ? C.ink : 0xf6f6f4);
+          }
+          // hanging gi
+          this.leftPanel(g, f, 0.66, 0.8, 12, 30, 0xf6f6f4);
+          this.leftPanel(g, f, 0.82, 0.94, 12, 30, C.ink);
+          this.leftPanel(g, f, 0.62, 0.98, 30, 31, C.wallDark);
+          // sign band
+          this.rightPanel(g, f, 0.12, 0.88, 26, 36, C.ink);
+          const sign = this.onRight(f, 0.5, 31);
+          this.buildingLayer.add(
+            this.add
+              .text(sign.x, sign.y, 'BOUTIQUE', { fontFamily: '"Barlow Condensed", Arial Narrow, sans-serif', fontSize: '9px', color: '#F4F4F2', fontStyle: '700' })
+              .setOrigin(0.5)
+              .setRotation(-0.46)
+              .setDepth(order(b) + 1),
+          );
           break;
         }
         case 'parking': {
           const pts = this.tilePoints(b.x, b.y, s.w, s.h, 0, 1);
-          g.fillStyle(0x3b434e, 1).fillPoints(pts, true);
-          g.lineStyle(2, 0xdedad0, 0.8);
+          g.fillStyle(0x2a2c30, 1).fillPoints(pts, true);
+          g.lineStyle(2, 0xdedad0, 0.7);
           for (let i = 0.5; i < s.w; i += 0.5) {
             const a = toScreen(b.x + i, b.y + 0.15);
             const c = toScreen(b.x + i, b.y + 0.9);
             g.lineBetween(a.x, a.y - 1, c.x, c.y - 1);
           }
-          this.box(g, b.x + 0.6, b.y + 1.15, 0.45, 0.7, 10, C.crisis);
+          this.box(g, b.x + 0.6, b.y + 1.15, 0.45, 0.7, 9, 0xd8d8d6, 0x2b2d31);
           break;
         }
       }
@@ -256,6 +358,57 @@ export class ClubScene extends Phaser.Scene {
     }
     this.buildingLayer.sort('depth');
     this.drawCracks();
+  }
+
+  private drawDojo(g: G, b: Building) {
+    const s = BUILDING_SPECS.dojo;
+    const pts = this.tilePoints(b.x, b.y, s.w, s.h);
+    const [A, Bp, Cc, D] = pts;
+    // raised concrete platform with a dark border, mats lie on top
+    g.fillStyle(shade(C.wallMid, 0.75), 1).fillPoints([D, Cc, { x: Cc.x, y: Cc.y + 6 }, { x: D.x, y: D.y + 6 }], true);
+    g.fillStyle(shade(C.wallMid, 0.6), 1).fillPoints([Cc, Bp, { x: Bp.x, y: Bp.y + 6 }, { x: Cc.x, y: Cc.y + 6 }], true);
+    g.fillStyle(C.matBorder, 1).fillPoints(pts, true);
+    g.lineStyle(1, C.ink, 0.6).strokePoints(pts, true);
+    // two back walls: light upper part, dark lower band, club mark
+    const wallH = 54;
+    const upP = (q: Pt, d: number) => ({ x: q.x, y: q.y - d });
+    g.fillStyle(C.wallLight, 1).fillPoints([A, D, upP(D, wallH), upP(A, wallH)], true);
+    g.fillStyle(shade(C.wallLight, 0.88), 1).fillPoints([A, Bp, upP(Bp, wallH), upP(A, wallH)], true);
+    g.fillStyle(C.wallDark, 1).fillPoints([A, D, upP(D, 12), upP(A, 12)], true);
+    g.fillStyle(shade(C.wallDark, 0.85), 1).fillPoints([A, Bp, upP(Bp, 12), upP(A, 12)], true);
+    g.lineStyle(1, C.ink, 0.6).strokePoints([upP(D, wallH), upP(A, wallH), upP(Bp, wallH)], false);
+    const midL = { x: (A.x + D.x) / 2, y: (A.y + D.y) / 2 };
+    const midR = { x: (A.x + Bp.x) / 2, y: (A.y + Bp.y) / 2 };
+    this.logo(g, { x: midR.x - 14, y: midR.y - 42 }, 12, C.ink);
+    // timetable board on the left wall
+    g.fillStyle(C.ink, 1).fillPoints([{ x: midL.x - 20, y: midL.y - 10 - 36 }, { x: midL.x + 20, y: midL.y + 10 - 36 }, { x: midL.x + 20, y: midL.y + 10 - 20 }, { x: midL.x - 20, y: midL.y - 10 - 20 }], true);
+    g.lineStyle(1, C.gold, 0.9);
+    for (let i = 0; i < 3; i++) g.lineBetween(midL.x - 15, midL.y - 7 - 32 + i * 4, midL.x + 15, midL.y + 7 - 32 + i * 4);
+    // hanging lamp
+    const lamp = { x: A.x, y: A.y + 40 };
+    g.lineStyle(1, C.ink, 1).lineBetween(lamp.x, A.y - wallH, lamp.x, lamp.y - 50);
+    g.fillStyle(C.ink, 1).fillTriangle(lamp.x - 9, lamp.y - 44, lamp.x + 9, lamp.y - 44, lamp.x, lamp.y - 52);
+    g.fillStyle(0xfff1c4, 0.1).fillTriangle(lamp.x - 40, lamp.y + 20, lamp.x + 40, lamp.y + 20, lamp.x, lamp.y - 44);
+    // plants in the two back corners
+    this.plant(g, { x: D.x + 18, y: D.y - 6 }, 0.9);
+    this.plant(g, { x: Bp.x - 18, y: Bp.y - 6 }, 0.9);
+    // low shoe wall along the front-left edge, sneakers lined up
+    const shoe = this.add.graphics().setDepth(order({ ...b, type: 'vestiaire' }) + 400);
+    const f = { D: { x: D.x, y: D.y }, Cc: { x: Cc.x, y: Cc.y } };
+    const up = (q: Pt, d: number) => ({ x: q.x, y: q.y - d });
+    const a0 = this.onLeft(f, 0.08, 0);
+    const a1 = this.onLeft(f, 0.55, 0);
+    shoe.fillStyle(C.wallMid, 1).fillPoints([a0, a1, up(a1, 12), up(a0, 12)], true);
+    shoe.fillStyle(C.wallLight, 1).fillPoints([up(a0, 12), up(a1, 12), { x: up(a1, 12).x + 6, y: up(a1, 12).y - 3 }, { x: up(a0, 12).x + 6, y: up(a0, 12).y - 3 }], true);
+    for (let i = 0; i < 9; i++) {
+      const q = this.onLeft(f, 0.1 + i * 0.05, 4);
+      shoe.fillStyle(i % 3 ? 0xf4f4f2 : C.ink, 1).fillRect(q.x - 3, q.y - 2, 5, 3);
+    }
+    this.buildingLayer.add(shoe);
+    // benches beside the room
+    const bench = this.add.graphics().setDepth(order({ ...b, type: 'vestiaire' }) + 300);
+    this.bench(bench, b.x + s.w + 0.3, b.y + 1.5, 2.2, false);
+    this.buildingLayer.add(bench);
   }
 
   // ---------- kintsugi cracks & alert badges ----------
@@ -276,7 +429,7 @@ export class ClubScene extends Phaser.Scene {
       if (!b) continue;
       const s = BUILDING_SPECS[b.type];
       const center = toScreen(b.x + s.w / 2, b.y + s.h / 2);
-      const lift = b.type === 'vestiaire' ? 38 : b.type === 'accueil' ? 28 : 4;
+      const lift = b.type === 'vestiaire' || b.type === 'boutique' ? 40 : b.type === 'accueil' ? 18 : 4;
       const rng = new Phaser.Math.RandomDataGenerator([b.id + a.text]);
       const spread = Math.min(s.w, s.h) * 22 + 18;
       for (let k = 0; k < (a.level === 'crise' ? 5 : 3); k++) {
@@ -288,25 +441,25 @@ export class ClubScene extends Phaser.Scene {
           py += rng.between(-9, 9);
           pts.push({ x: px, y: py });
         }
-        g.lineStyle(5, C.gold, 0.25).strokePoints(pts, false);
+        g.lineStyle(6, C.gold, 0.25).strokePoints(pts, false);
         g.lineStyle(2, C.gold, 1).strokePoints(pts, false);
+        g.lineStyle(1, 0xfff3c8, 0.9).strokePoints(pts.slice(0, 3), false);
       }
-      // Stack badges that land on the same spot.
       const key = `${Math.round(center.x / 60)},${Math.round(center.y / 60)}`;
       const k = stack.get(key) ?? 0;
       stack.set(key, k + 1);
       const by = center.y - lift - 34 - k * 26;
-      const color = a.level === 'crise' ? '#D35B4F' : '#E59F3A';
+      const color = a.level === 'crise' ? C.crisis : C.warn;
       const label = this.add
         .text(center.x, by, `${a.level === 'crise' ? '⬣' : '▲'} ${a.text}`, {
           fontFamily: 'Inter, system-ui, sans-serif',
           fontSize: '12px',
-          color: '#1F2A3D',
-          backgroundColor: '#E9E4D8',
-          padding: { x: 6, y: 3 },
+          color: '#141414',
+          backgroundColor: '#FFFFFF',
+          padding: { x: 8, y: 4 },
         })
         .setOrigin(0.5, 1);
-      const bar = this.add.rectangle(center.x - label.width / 2, by, 4, label.height, Phaser.Display.Color.HexStringToColor(color).color).setOrigin(0, 1);
+      const bar = this.add.rectangle(center.x - label.width / 2, by, 4, label.height, color).setOrigin(0, 1);
       this.badgeLayer.add([label, bar]);
     }
   }
@@ -317,17 +470,23 @@ export class ClubScene extends Phaser.Scene {
     this.whenReady(() => {
       const mats = this.buildings.filter((b) => b.type === 'tatami');
       const target = mats.length ? Math.min(60, Math.round(count)) : 0;
-      while (this.people.length > target) this.people.pop()!.destroy();
+      while (this.people.length > target) this.people.pop()!.img.destroy();
       while (this.people.length < target && belts.length) {
-        const who = belts[Math.floor(Math.random() * belts.length)];
-        const img = this.add.image(0, 0, `p-${who.belt}${who.kid ? '-k' : ''}`).setOrigin(0.5, 1);
-        this.placeOnMat(img, mats, false);
-        this.people.push(img);
+        const rnd = mulberry(++this.seq * 9973);
+        const first = this.people.length === 0;
+        const who = first ? { belt: 'noire' as Belt, kid: false } : belts[Math.floor(rnd() * belts.length)];
+        const seated = !first && rnd() < 0.35;
+        const spec = this.randomSpec(who.belt, who.kid, rnd, seated ? 'assis' : 'debout');
+        if (first) spec.gi = 'noir';
+        const img = this.add.image(0, 0, this.personTexture(spec)).setOrigin(0.5, 1);
+        const person = { img, seated };
+        this.placeOnMat(person, mats, false);
+        this.people.push(person);
       }
     });
   }
 
-  private placeOnMat(img: Phaser.GameObjects.Image, mats: Building[], animate: boolean) {
+  private placeOnMat(p: Person, mats: Building[], animate: boolean) {
     if (!mats.length) return;
     const t = mats[Math.floor(Math.random() * mats.length)];
     const fx = t.x + 0.2 + Math.random() * 0.6;
@@ -335,22 +494,23 @@ export class ClubScene extends Phaser.Scene {
     const s = toScreen(fx, fy);
     const depth = (fx + fy) * 10 + 2;
     if (!animate) {
-      img.setPosition(s.x, s.y + ORIGIN_Y - 2).setDepth(depth);
+      p.img.setPosition(s.x, s.y + ORIGIN_Y - 2).setDepth(depth);
     } else {
-      img.setFlipX(s.x < img.x);
-      this.tweens.add({ targets: img, x: s.x, y: s.y + ORIGIN_Y - 2, duration: 900 + Math.random() * 900, ease: 'Sine.easeInOut', onComplete: () => img.setDepth(depth) });
+      p.img.setFlipX(s.x < p.img.x);
+      this.tweens.add({ targets: p.img, x: s.x, y: s.y + ORIGIN_Y - 2, duration: 900 + Math.random() * 900, ease: 'Sine.easeInOut', onComplete: () => p.img.setDepth(depth) });
     }
   }
 
   setWeather(w: Weatherish, month: number) {
     this.whenReady(() => {
-      this.drawGround(month);
       const cold = w.tempMaxC < 2;
       const rainy = w.precipMm > 2;
+      const wetChanged = rainy !== this.wet;
+      this.wet = rainy;
+      this.drawGround(month, wetChanged);
       this.rain.emitting = rainy && !cold;
       this.snow.emitting = rainy && cold;
       this.heat.fillAlpha = w.tempMaxC >= 28 ? Math.min(0.22, (w.tempMaxC - 26) * 0.03) : 0;
-      this.cameras.main.setBackgroundColor(rainy ? shade(C.slate, 0.85) : C.slate);
     });
   }
 
@@ -364,7 +524,7 @@ export class ClubScene extends Phaser.Scene {
     const cam = this.cameras.main;
     this.input.mouse?.disableContextMenu();
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.4, 2.5));
+      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.4, 3));
     });
     this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
       this.dragStart = { x: ptr.x, y: ptr.y, sx: cam.scrollX, sy: cam.scrollY };
@@ -423,11 +583,10 @@ export class ClubScene extends Phaser.Scene {
   }
 
   update(_t: number, dt: number) {
-    // People wander between tatamis.
     if (!this.people.length) return;
     const mats = this.buildings.filter((b) => b.type === 'tatami');
     const chance = dt / 2500;
-    for (const img of this.people) if (Math.random() < chance) this.placeOnMat(img, mats, true);
+    for (const person of this.people) if (!person.seated && Math.random() < chance) this.placeOnMat(person, mats, true);
   }
 }
 
@@ -435,10 +594,26 @@ function p(q: Pt, oy: number): Pt {
   return { x: q.x, y: q.y + oy };
 }
 
-function order(b: Building): number {
+function order(b: Pick<Building, 'type' | 'x' | 'y'>): number {
   const s = BUILDING_SPECS[b.type];
   if (b.type === 'dojo') return -5;
   if (b.type === 'tatami' || b.type === 'parking') return (b.x + b.y) * 10 - 4;
   return (b.x + s.w - 1 + b.y + s.h - 1) * 10 + 5;
 }
 
+function hash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+function mulberry(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

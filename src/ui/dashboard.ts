@@ -38,7 +38,7 @@ export function renderDashboard(root: HTMLElement, game: Game) {
     <canvas class="chart" id="dash-cash"></canvas>
     <h3>Adhérents par mois</h3>
     <canvas class="chart" id="dash-members"></canvas>
-    ${legend([{ label: 'Adultes', color: '#3E7CB1' }, { label: 'Enfants', color: '#D9A93B' }])}
+    ${legend([{ label: 'Adultes', color: '#141414' }, { label: 'Enfants', color: '#E0A526' }])}
 
     <h3>Capacité de la salle</h3>
     <table class="t"><tbody>
@@ -70,15 +70,15 @@ export function renderDashboard(root: HTMLElement, game: Game) {
   `;
 
   const days = sim.days.slice(-120);
-  lineChart(root.querySelector('#dash-cash')!, days.map((d) => d.date.slice(8, 10) + '/' + d.date.slice(5, 7)), [{ label: 'Trésorerie', color: '#3E7CB1', values: days.map((d) => d.cash) }], (n) => `${Math.round(n / 100) / 10}k€`, { zeroLine: true });
+  lineChart(root.querySelector('#dash-cash')!, days.map((d) => d.date.slice(8, 10) + '/' + d.date.slice(5, 7)), [{ label: 'Trésorerie', color: '#141414', values: days.map((d) => d.cash) }], (n) => `${Math.round(n / 100) / 10}k€`, { zeroLine: true });
   const ms = months.slice(-12);
   const labels = [...ms.map((m) => monthLabel(m.month)), 'en cours'];
   lineChart(
     root.querySelector('#dash-members')!,
     labels,
     [
-      { label: 'Adultes', color: '#3E7CB1', values: [...ms.map((m) => m.members - m.kids), r.members.adulte] },
-      { label: 'Enfants', color: '#D9A93B', values: [...ms.map((m) => m.kids), r.members.enfant] },
+      { label: 'Adultes', color: '#141414', values: [...ms.map((m) => m.members - m.kids), r.members.adulte] },
+      { label: 'Enfants', color: '#E0A526', values: [...ms.map((m) => m.kids), r.members.enfant] },
     ],
     (n) => String(Math.round(n)),
   );

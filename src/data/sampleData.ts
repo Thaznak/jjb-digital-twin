@@ -31,6 +31,7 @@ export function sampleClub(): ClubConfig {
   buildings.push({ id: 'vest-1', type: 'vestiaire', x: 4, y: 6 });
   buildings.push({ id: 'vest-2', type: 'vestiaire', x: 4, y: 9 });
   buildings.push({ id: 'accueil-1', type: 'accueil', x: 4, y: 12 });
+  buildings.push({ id: 'boutique-1', type: 'boutique', x: 15, y: 8 });
   buildings.push({ id: 'parking-1', type: 'parking', x: 14, y: 13 });
   return {
     name: 'Club fictif de JJB',

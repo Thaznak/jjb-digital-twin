@@ -34,8 +34,8 @@ export function lineChart(canvas: HTMLCanvasElement, labels: string[], series: S
   const Y = (v: number) => pad.t + (1 - (v - min) / (max - min)) * (h - pad.t - pad.b);
 
   ctx.font = '11px "JetBrains Mono", ui-monospace, monospace';
-  ctx.fillStyle = '#55607a';
-  ctx.strokeStyle = '#ddd5c4';
+  ctx.fillStyle = '#5b5d62';
+  ctx.strokeStyle = '#e4e4e1';
   ctx.lineWidth = 1;
   for (let k = 0; k <= 3; k++) {
     const v = min + ((max - min) * k) / 3;
@@ -48,7 +48,7 @@ export function lineChart(canvas: HTMLCanvasElement, labels: string[], series: S
     ctx.fillText(format(v), pad.l - 6, y + 4);
   }
   if (opts.zeroLine && min < 0) {
-    ctx.strokeStyle = '#d35b4f';
+    ctx.strokeStyle = '#d4513f';
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(pad.l, Y(0));
@@ -57,7 +57,7 @@ export function lineChart(canvas: HTMLCanvasElement, labels: string[], series: S
     ctx.setLineDash([]);
   }
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#55607a';
+  ctx.fillStyle = '#5b5d62';
   const step = Math.max(1, Math.ceil(labels.length / 6));
   labels.forEach((l, i) => {
     if (i % step === 0 || i === labels.length - 1) ctx.fillText(l, X(i), h - 6);

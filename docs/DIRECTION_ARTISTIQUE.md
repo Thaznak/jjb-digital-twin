@@ -1,25 +1,31 @@
-# Direction artistique : « Tatami Twin »
+# Direction artistique : « Académie »
 
-Un jeu de gestion en 2D isométrique, à mi-chemin entre la maquette d'architecte vivante et le tableau de bord business. Le public est un entrepreneur (ici un responsable de club de JJB) : le ton est bienveillant, lisible, avec une pointe d'humour, jamais infantilisant.
+Version 2 (18 nov. 2026), construite à partir de la planche d'intention fournie par Paul. Elle remplace la direction « Tatami Twin » v1 (ardoise, tatami bleu, lin).
 
-Intention centrale : **le jeu est un révélateur**. Comme l'IA révèle les forces et les fragilités d'une équipe, la carte révèle celles du club. Les points de fragilité ne sont pas cachés : ils apparaissent en **fissures dorées façon Kintsugi**, qu'on répare en jouant.
+Un jeu de gestion en 2D isométrique qui ressemble à une **vraie académie de JJB, vue en maquette pixel art** : dojo monochrome, tatamis blancs, gi blancs et noirs, quelques touches de bois et de vert, une nuit pluvieuse dehors. L'interface est un **cadre papier blanc** avec une typographie condensée noire, comme une affiche de club. Le public est un entrepreneur (ici un responsable de club) : ton bienveillant, lisible, jamais infantilisant.
 
-## 1. Palette (8 couleurs)
+Intention centrale : **le jeu est un révélateur**. Les points de fragilité apparaissent en **fissures dorées façon Kintsugi**, seule couleur chaude et brillante de la scène.
+
+## 1. Palette
 
 | Rôle | Nom | Hex | Usage |
 |---|---|---|---|
-| Fond | Ardoise de nuit | `#1F2A3D` | Fond de carte, hors-terrain |
-| Sol | Lin | `#E9E4D8` | Murs, panneaux d'UI clairs |
-| Matière | Bleu tatami | `#3E7CB1` | Tatamis, accent principal de l'UI |
-| Matière | Bois hinoki | `#C69C6D` | Sols de bâtiments, cadres |
-| Accent | Or kintsugi | `#D9A93B` | Fissures de fragilité, sélection, moments clés |
-| État : sain | Vert bambou | `#5BAE7E` | Indicateurs OK |
-| État : tension | Ambre | `#E59F3A` | Indicateurs à surveiller |
-| État : crise | Vermillon doux | `#D35B4F` | Indicateurs en crise |
+| Cadre | Papier | `#FAFAF8` / `#FFFFFF` | Fond de l'interface, cartes |
+| Texte | Encre | `#141414` | Titres, boutons, contours pixel, gi noirs |
+| Scène | Nuit | `#1D1F22` | Fond de la carte, extérieur sous la pluie |
+| Sol | Pierre | `#3A3D42` / `#35383D` | Carrelage intérieur |
+| Murs | Enduit clair | `#E4E4E1`, soubassement `#2F3034` | Murs du dojo, vestiaires, boutique |
+| Tatami | Blanc tatami | `#EEEEEC`, joints `#D3D4D2`, bordure `#3A3C40` | Surface d'entraînement |
+| Matière | Bois | `#B98A57` | Accueil, bancs, portes, étagères |
+| Vivant | Feuillage | `#5E8C3A` / `#3F6A2A` | Plantes en pot |
+| Accent | Or kintsugi | `#E0A526` | Fissures de fragilité, moments clés |
+| État : sain | Vert | `#3F8F4E` | Pastille ronde |
+| État : tension | Ambre | `#F2B33D` | Triangle |
+| État : crise | Rouge | `#D4513F` | Octogone |
 
-Règle : l'or n'est jamais une couleur d'état. Il signale une fragilité *révélée*, quel que soit son niveau. Les trois couleurs d'état sont toujours doublées d'une forme (pastille pleine, triangle, octogone) pour rester lisibles par les daltoniens.
+Règles : l'or n'est jamais une couleur d'état. Les états sont toujours doublés d'une forme (rond, triangle, octogone) et d'un pictogramme de deux pratiquants (assis face à face, en garde, l'un sur l'autre).
 
-Ceintures (couleurs de contenu, hors palette d'UI) : blanche `#F4F4F0`, grise `#9AA0A6`, jaune `#E8C547`, orange `#E08A3C`, verte `#4F9D5B`, bleue `#2F6FB5`, violette `#7A4FA0`, marron `#7A5235`, noire `#1A1A1A` avec barrette rouge.
+Ceintures (seule couleur vive d'un personnage) : blanche `#F4F4F0`, grise `#9AA0A6`, jaune `#E8C547`, orange `#E08A3C`, verte `#4F9D5B`, bleue `#2F6FB5`, violette `#7A4FA0`, marron `#7A5235`, noire `#1A1A1A` avec barrette rouge.
 
 ## 2. Grille isométrique
 
@@ -28,30 +34,37 @@ Ceintures (couleurs de contenu, hors palette d'UI) : blanche `#F4F4F0`, grise `#
 - Profondeur : `depth = (x + y) * 10 + hauteur`. Les personnages sont triés sur la même échelle.
 - Lumière unique venant du haut gauche : face gauche à 100 %, face droite à 78 %, dessus à 112 % de la teinte de base.
 
-## 3. Bâtiments
+## 3. Bâtiments et décor
 
-Volumes simples, presque des maquettes en bois peint, avec un seul détail signature par bâtiment.
+Volumes nets, murs clairs avec soubassement sombre, contour encre de 1 px. Un détail signature par bâtiment.
 
 | Bâtiment | Emprise | Détail signature | Effet en jeu |
 |---|---|---|---|
-| Dojo (salle) | 4 x 4 | Toit à deux pans et noren bleu à l'entrée | Débloque les créneaux, porte les tatamis |
-| Tatami | 1 x 1 | Tuile bleue à liseré clair | +8 places par créneau |
-| Vestiaires | 2 x 2 | Porte avec pictogramme de gi | +20 personnes simultanées |
-| Accueil | 2 x 1 | Comptoir et tableau des horaires | Améliore la conversion des essais |
-| Parking | 2 x 2 | Marquage au sol, une voiture | Augmente l'attractivité locale |
+| Dojo | 6 x 6 | Deux murs du fond, marque à trois bandes, tableau des horaires, lampe suspendue, plantes, muret à chaussures | Porte les tatamis, débloque les cours |
+| Tatami | 1 x 1 | Dalle blanche à joint gris | +2 places par créneau |
+| Vestiaires | 2 x 2 | Porte en bois, pictogramme, rangée de casiers, banc | +25 personnes en même temps |
+| Accueil | 2 x 1 | Comptoir bois plateau blanc, écran, plante, hôte en t-shirt noir | +15 % de conversion des essais |
+| Boutique | 2 x 2 | Étagères de gi pliés blancs et noirs, gi suspendus, bandeau « BOUTIQUE » | +1,5 € de marge par adhérent et par mois |
+| Parking | 2 x 2 | Asphalte, marquage, voiture claire | +6 % d'attractivité |
 
-## 4. Personnages
+Extérieur : sol mouillé avec reflets quand il pleut, anneau de saison autour de la carte.
 
-- Silhouette de 14 x 24 px, tête ronde, gi blanc ou bleu, **la ceinture est la seule couleur vive**, toujours visible.
-- 16 frames maximum par personnage : marche 4 directions x 2 frames (8), salut 2 frames, randori 4 frames, repos 2 frames.
-- Enfants : même silhouette à 75 % de hauteur. Professeurs : gi noir, ceinture noire.
+## 4. Personnages (pixel art)
+
+- 16 x 31 px debout, 18 x 22 px assis en tailleur, contour encre automatique, rendu sans lissage.
+- Variété : 5 carnations, 4 coiffures (court, chignon, boucles, rasé), barbe possible, gi blanc (60 %) ou noir (40 %).
+- **La ceinture est la seule couleur vive**, avec le pan qui pend. Ceinture noire : barrette rouge.
+- Le professeur porte un gi noir et une ceinture noire. Le personnel d'accueil porte un t-shirt noir.
+- Enfants : même construction, plus petits.
+- Poses : debout (se déplace entre les tatamis) et assis (attend en bord de tapis). Animations prévues en V2 : marche, salut, randori.
 
 ## 5. UI
 
-- Panneaux en Lin sur Ardoise, coins à 6 px, une seule ombre portée pour le panneau actif.
-- Typographies : **Barlow Condensed** (titres, esprit dossard sportif), **Inter** (texte), **JetBrains Mono** (chiffres).
-- Jauges horizontales segmentées comme une ceinture à barrettes : 4 barrettes, chacune un quart de l'objectif.
-- Notifications : petite carte en bas à gauche, pictogramme d'état, phrase courte au présent (« Le créneau de 19 h déborde »).
+- Cadre papier blanc, filet noir de 3 px sous le bandeau et autour de la scène.
+- Bandeau : titre condensé noir en capitales, filet vertical, sur-titre en petites capitales espacées, trois bandes obliques dégradées (noir, gris, gris clair), devise « Encadrer · Enseigner · Développer votre communauté ».
+- Carte flottante sur la scène, bord noir de 2 px : **Cours du soir**, **Capacité** (chiffre + jauge de 20 segments), **Accueil** (pastille « N en attente »), météo et facteurs de demande, légende Sain / Tension / Crise.
+- Typographies : **Barlow Condensed** (titres), **Inter** (texte), **JetBrains Mono** (chiffres).
+- Notifications : carte blanche en bas à gauche, pictogramme d'état, phrase courte au présent.
 
 ## 6. Météo, saisons et crises
 
@@ -64,21 +77,21 @@ Volumes simples, presque des maquettes en bois peint, avec un seul détail signa
 ## 7. Cinq principes de DA
 
 1. **Lire avant de jouer** : chaque état du club se comprend en 3 secondes, sans ouvrir de panneau.
-2. **La fragilité est dorée** : on montre les failles comme des lieux à réparer, pas comme des échecs.
-3. **Une couleur vive par personnage** : la ceinture. Tout le reste reste calme.
-4. **Maquette, pas cartoon** : volumes nets, peu de détails, humour dans les textes plutôt que dans les formes.
+2. **La fragilité est dorée** : l'or est la seule couleur chaude de la scène, réservée aux failles à réparer.
+3. **Monochrome d'abord** : noir, blanc, gris, un peu de bois et de vert. La couleur vive d'un personnage, c'est sa ceinture.
+4. **Une vraie académie** : chaque élément existe dans un club réel (muret à chaussures, casiers, gi en boutique), pas de décor fantaisiste.
 5. **Le chiffre est toujours à un clic** : chaque effet visuel renvoie à une donnée réelle ou à une hypothèse nommée.
 
 ## 8. Prompts d'image réutilisables
 
 Base commune à coller avant chaque prompt :
-> Isometric 2:1 game asset, 64x32 tile grid, clean flat shading with light from top-left, painted wooden architectural model look, limited palette (slate #1F2A3D, linen #E9E4D8, tatami blue #3E7CB1, hinoki wood #C69C6D, kintsugi gold #D9A93B), transparent background, no text, no logo.
+> Isometric 2:1 pixel-art game asset, 64x32 tile grid, crisp 1px dark outlines, light from top-left, monochrome martial arts academy look (ink #141414, light plaster walls #E4E4E1 with dark baseboard #2F3034, white mats #EEEEEC, wood #B98A57, plants #5E8C3A, kintsugi gold #E0A526 only for cracks), transparent background, no text, no logo.
 
-- **Bâtiment** : `{base} A {dojo | locker room | reception desk | small parking lot} for a Brazilian jiu-jitsu club, footprint {4x4 | 2x2 | 2x1} tiles, one signature detail: {blue noren curtain | gi pictogram door | timetable board | painted parking lines}.`
-- **Tatami** : `{base} Single blue tatami mat tile, subtle light border, top view isometric, seamless when tiled.`
-- **Personnage** : `{base} Sprite sheet, 16 frames, 14x24 px character in white jiu-jitsu gi with a {belt color} belt, walk cycle 4 directions x 2 frames, bow 2 frames, sparring 4 frames, idle 2 frames.`
+- **Bâtiment** : `{base} A {dojo | locker room | reception desk | gear shop | small parking lot} for a Brazilian jiu-jitsu club, footprint {4x4 | 2x2 | 2x1} tiles, one signature detail: {three-stripe wall mark and shoe rack | lockers and wooden door | wooden counter with monitor | shelves of folded white and black gis | painted parking lines}.`
+- **Tatami** : `{base} Single white tatami mat tile, light grey seam, top view isometric, seamless when tiled.`
+- **Personnage** : `{base} Sprite sheet, 16 frames, 16x31 px character in a {white | black} jiu-jitsu gi with a {belt color} belt, {skin tone}, {hair style}, walk cycle 4 directions x 2 frames, bow 2 frames, sparring 4 frames, idle 2 frames.`
 - **Météo** : `{base} Overlay particle sprites: {diagonal light-blue rain streaks | slow white snowflakes | warm amber heat haze}, 8 variations, 16x16 px.`
 - **Kintsugi** : `{base} Thin golden kintsugi crack lines, 6 variations, drawn to overlay an isometric building face, glowing slightly, transparent background.`
-- **UI** : `Flat game UI kit, linen panels on dark slate, 6 px radius, segmented progress bars styled like a jiu-jitsu belt with 4 stripes, status icons circle/triangle/octagon in green #5BAE7E, amber #E59F3A, red #D35B4F.`
+- **UI** : `Flat game UI kit, white paper panels with 2px black borders, bold condensed black uppercase titles, 20-segment green capacity bar, amber waiting pill, status icons circle/triangle/octagon in green #3F8F4E, amber #F2B33D, red #D4513F with two-grappler pictograms.`
 
 Dans le prototype, tous les assets sont dessinés en code (Phaser Graphics) à partir de cette palette. Les prompts ci-dessus servent à produire les vrais sprites plus tard.

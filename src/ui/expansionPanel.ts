@@ -79,7 +79,7 @@ export class ExpansionPanel {
 
       <h3>Trésorerie cumulée du nouveau club</h3>
       <canvas class="chart" id="exp-cash"></canvas>
-      ${legend([{ label: 'Trésorerie', color: '#3E7CB1' }, { label: 'Adhérents (échelle à part)', color: '#D9A93B', dashed: true }])}
+      ${legend([{ label: 'Trésorerie', color: '#141414' }, { label: 'Adhérents (échelle à part)', color: '#E0A526', dashed: true }])}
       <canvas class="chart" id="exp-members" style="height:110px;margin-top:6px"></canvas>
 
       <h3>Hypothèses du lieu</h3>
@@ -118,8 +118,8 @@ export class ExpansionPanel {
 
   private draw(res: ExpansionResult) {
     const labels = res.months.map((m) => `M${m.month}`);
-    lineChart(this.root.querySelector('#exp-cash')!, labels, [{ label: 'Trésorerie', color: '#3E7CB1', values: res.months.map((m) => m.cash) }], (v) => `${Math.round(v / 100) / 10}k€`, { zeroLine: true });
-    lineChart(this.root.querySelector('#exp-members')!, labels, [{ label: 'Adhérents', color: '#D9A93B', values: res.months.map((m) => m.members), dashed: true }], (v) => String(Math.round(v)));
+    lineChart(this.root.querySelector('#exp-cash')!, labels, [{ label: 'Trésorerie', color: '#141414', values: res.months.map((m) => m.cash) }], (v) => `${Math.round(v / 100) / 10}k€`, { zeroLine: true });
+    lineChart(this.root.querySelector('#exp-members')!, labels, [{ label: 'Adhérents', color: '#E0A526', values: res.months.map((m) => m.members), dashed: true }], (v) => String(Math.round(v)));
   }
 
   private onChange(e: Event) {

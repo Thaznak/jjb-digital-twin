@@ -230,7 +230,7 @@ export class ClubSim {
 
     // Money.
     const fees = cfg.fees;
-    let revenue = ((s.members.adulte * fees.adultMonthly + s.members.enfant * fees.kidMonthly) * eff.feeMultiplier) / dim + newcomers * fees.registrationFee;
+    let revenue = ((s.members.adulte * fees.adultMonthly + s.members.enfant * fees.kidMonthly) * eff.feeMultiplier) / dim + newcomers * fees.registrationFee + (totalMembers * fac.revenuePerMember) / dim;
     const fixed = cfg.charges.filter((c) => c.kind === 'fixe').reduce((a, c) => a + c.amount, 0);
     const perMember = cfg.charges.filter((c) => c.kind === 'par_adherent').reduce((a, c) => a + c.amount, 0) * totalMembers;
     const coachPay = cfg.slots.reduce((a, sl) => a + sl.durationH * (cfg.coaches.find((c) => c.id === sl.coachId)?.hourlyCost ?? 0), 0) * (52 / 12);
