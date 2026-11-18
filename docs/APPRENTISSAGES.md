@@ -4,7 +4,7 @@ Retour d'expérience sur la construction de Tatami Twin, prototype réalisé en 
 
 ## Ce qui a bien marché
 
-1. **Séparer le moteur du rendu dès le premier prompt.** `/engine` en TypeScript pur a permis d'écrire 27 tests et de régler l'équilibre du modèle (adhérents, trésorerie) sans lancer le jeu une seule fois. C'est la décision qui fait gagner le plus de temps.
+1. **Séparer le moteur du rendu dès le premier prompt.** `/engine` en TypeScript pur a permis d'écrire 26 tests et de régler l'équilibre du modèle (adhérents, trésorerie) sans lancer le jeu une seule fois. C'est la décision qui fait gagner le plus de temps.
 2. **Faire tourner le modèle avant de dessiner.** Le premier essai donnait un club qui perdait des adhérents chaque mois : les vestiaires saturaient. Une sonde de 12 mois en console a suffi à le voir et à corriger. Sans tests, on l'aurait découvert en jouant, beaucoup plus tard.
 3. **Dessiner les assets en code depuis la palette de la DA.** Pas de dépendance à un pack externe, et la DA devient une contrainte concrète (8 couleurs, une seule couleur vive par personnage : la ceinture).
 4. **Des connecteurs avec repli.** La météo réelle passe par Open-Meteo, mais le jeu reste jouable hors ligne grâce aux normales climatiques. Un connecteur qui peut échouer doit toujours avoir un plan B.
