@@ -1,6 +1,0 @@
-{
-  "_doc": "Coefficients mensuels (index 0 = janvier, 1 = mois moyen). Calés sur l'année scolaire française : rentrée en septembre, creux l'été, bonnes résolutions en janvier. Hypothèses à recalibrer avec l'historique du club.",
-  "attendance": [1.05, 0.95, 1.0, 0.92, 0.9, 0.85, 0.5, 0.35, 1.15, 1.05, 1.0, 0.85],
-  "signups":    [1.4, 0.8, 0.8, 0.6, 0.5, 0.4, 0.2, 0.6, 3.0, 1.5, 0.8, 0.4],
-  "churn":      [0.8, 0.8, 0.8, 0.9, 1.0, 1.6, 2.0, 1.2, 0.6, 0.7, 0.8, 1.0]
-}

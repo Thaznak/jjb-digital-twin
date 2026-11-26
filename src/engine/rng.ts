@@ -1,4 +1,4 @@
-/** Small seeded PRNG (mulberry32) so baseline and scenario runs are comparable. */
+/** Mulberry32: small seeded PRNG so sample data is the same on every machine. */
 export function createRng(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -8,9 +8,4 @@ export function createRng(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/** Multiplicative noise around 1, e.g. spread 0.1 gives 0.9..1.1. */
-export function noise(rng: () => number, spread: number): number {
-  return 1 + (rng() * 2 - 1) * spread;
 }

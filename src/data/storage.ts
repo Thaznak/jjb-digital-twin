@@ -1,30 +1,30 @@
-import type { ClubConfig } from '../engine/types';
+import type { Lineup, Person } from '../engine';
 
-const KEY = 'jjb-digital-twin/config/v1';
+const KEY = 'hellfest-twin:v1';
 
-/** Local persistence of the user's own data. Stays in this browser only. */
-export function loadConfig(): ClubConfig | null {
+export interface Saved {
+  people: Person[];
+  activeId: string | null;
+  lineup: Lineup | null;
+}
+
+function safe<T>(fn: () => T, fallback: T): T {
   try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
+export function load(): Saved {
+  return safe(() => {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as ClubConfig) : null;
-  } catch {
-    return null;
-  }
+    if (!raw) return { people: [], activeId: null, lineup: null };
+    const s = JSON.parse(raw) as Partial<Saved>;
+    return { people: s.people ?? [], activeId: s.activeId ?? null, lineup: s.lineup ?? null };
+  }, { people: [], activeId: null, lineup: null });
 }
 
-export function saveConfig(c: ClubConfig): boolean {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(c));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function clearConfig(): void {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    /* ignore */
-  }
+export function save(s: Saved): void {
+  safe(() => localStorage.setItem(KEY, JSON.stringify(s)), undefined);
 }
