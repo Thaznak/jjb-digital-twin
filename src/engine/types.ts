@@ -1,26 +1,36 @@
-/** Domain model of the festival twin. Pure data, no DOM, no Phaser. */
+/** Domain model of the festival twin. Pure data, no DOM. */
 
 export type StageKind = 'main' | 'open' | 'tent';
 
-export interface Stage {
+/**
+ * Plan coordinates: u to the east, v to the south, in site units (see Site.metresPerUnit).
+ * The renderer turns them into an isometric view; the engine only sees the ground plan.
+ */
+export interface Point {
+  u: number;
+  v: number;
+}
+
+export interface Stage extends Point {
   id: string;
   name: string;
   kind: StageKind;
-  /** Tile position of the front of the stage (where the crowd stands). */
-  x: number;
-  y: number;
-  /** Footprint in tiles, for rendering. */
-  w: number;
-  h: number;
-  /** Musical colour of the stage, shown in the lineup. */
+  /** True for the 4 stages announced for 2027 whose position is not published yet. */
+  provisional: boolean;
   genre: string;
 }
 
-export interface Hub {
+export interface Hub extends Point {
   id: string;
   name: string;
-  x: number;
-  y: number;
+}
+
+export type PoiKind = 'eau' | 'wc' | 'secours' | 'bar' | 'info';
+
+export interface Poi extends Point {
+  id: string;
+  kind: PoiKind;
+  name: string;
 }
 
 /** A walkable link between two nodes (stage or hub ids). */
@@ -30,11 +40,11 @@ export interface Edge {
 }
 
 export interface Site {
-  /** Metres per tile. */
-  metresPerTile: number;
+  metresPerUnit: number;
   stages: Stage[];
   hubs: Hub[];
   edges: Edge[];
+  pois: Poi[];
 }
 
 /** A concert. Times are minutes since midnight of the festival day; after midnight goes beyond 1440. */

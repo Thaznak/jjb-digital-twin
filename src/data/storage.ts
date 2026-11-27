@@ -1,12 +1,18 @@
-import type { Lineup, Person } from '../engine';
+import type { Lineup, Person, Point } from '../engine';
 
-const KEY = 'hellfest-twin:v1';
+const KEY = 'hellfest-twin:v2';
 
 export interface Saved {
   people: Person[];
   activeId: string | null;
   lineup: Lineup | null;
+  /** Last time friends' lists were refreshed (code import), ISO. */
+  lastSync: string | null;
+  /** Chosen starting point when there is no GPS. */
+  start: Point | null;
 }
+
+const EMPTY: Saved = { people: [], activeId: null, lineup: null, lastSync: null, start: null };
 
 function safe<T>(fn: () => T, fallback: T): T {
   try {
@@ -19,10 +25,9 @@ function safe<T>(fn: () => T, fallback: T): T {
 export function load(): Saved {
   return safe(() => {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { people: [], activeId: null, lineup: null };
-    const s = JSON.parse(raw) as Partial<Saved>;
-    return { people: s.people ?? [], activeId: s.activeId ?? null, lineup: s.lineup ?? null };
-  }, { people: [], activeId: null, lineup: null });
+    if (!raw) return { ...EMPTY };
+    return { ...EMPTY, ...(JSON.parse(raw) as Partial<Saved>) };
+  }, { ...EMPTY });
 }
 
 export function save(s: Saved): void {

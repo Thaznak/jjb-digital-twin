@@ -1,89 +1,141 @@
-import type { Site, Stage } from './types';
+import type { Point, Site, Stage } from './types';
 
 /**
- * Stylised festival site. Our own drawing: the relative placement follows public descriptions
- * (two Mainstages side by side, Valley facing Warzone, covered Altar and Temple), not the official map.
- * The 2027 map with the 4 new stages is not published: their positions are guesses to update.
+ * Stylised festival site, drawn by us from the public 2026 map: Mainstages side by side to the north,
+ * Altar and Temple next to Hellcity, Warzone far west, Valley by the woods, Metal Corner towards the campsite.
+ * The 4 stages announced for 2027 (Riot, Abyss, Forge, Crypt) have no published position: guesses to update.
+ * Coordinates are plan units (u east, v south); 1 unit is about 12 m.
  */
 export const SITE: Site = {
-  metresPerTile: 12,
+  metresPerUnit: 12,
   stages: [
-    { id: 'ms1', name: 'Mainstage 1', kind: 'main', x: 18, y: 12, w: 7, h: 4, genre: 'Têtes d’affiche' },
-    { id: 'ms2', name: 'Mainstage 2', kind: 'main', x: 27, y: 12, w: 7, h: 4, genre: 'Têtes d’affiche' },
-    { id: 'warzone', name: 'Warzone', kind: 'open', x: 37, y: 11, w: 5, h: 3, genre: 'Punk, hardcore' },
-    { id: 'riot', name: 'Riot', kind: 'open', x: 39, y: 19, w: 4, h: 3, genre: 'Punk, crust' },
-    { id: 'valley', name: 'Valley', kind: 'open', x: 31, y: 23, w: 5, h: 3, genre: 'Stoner, doom, sludge' },
-    { id: 'abyss', name: 'Abyss', kind: 'tent', x: 38, y: 28, w: 4, h: 4, genre: 'Post-metal, atmo' },
-    { id: 'altar', name: 'Altar', kind: 'tent', x: 7, y: 12, w: 5, h: 5, genre: 'Death, grind' },
-    { id: 'temple', name: 'Temple', kind: 'tent', x: 7, y: 20, w: 5, h: 5, genre: 'Black, pagan' },
-    { id: 'forge', name: 'Forge', kind: 'tent', x: 12, y: 28, w: 4, h: 4, genre: 'Thrash, heavy' },
-    { id: 'crypt', name: 'Crypt', kind: 'tent', x: 5, y: 29, w: 4, h: 4, genre: 'Doom, death old school' },
+    { id: 'ms1', name: 'Mainstage 1', kind: 'main', u: 27.5, v: 10, provisional: false, genre: 'Têtes d’affiche' },
+    { id: 'ms2', name: 'Mainstage 2', kind: 'main', u: 20, v: 10.5, provisional: false, genre: 'Têtes d’affiche' },
+    { id: 'altar', name: 'Altar', kind: 'tent', u: 34, v: 12.5, provisional: false, genre: 'Death, grind' },
+    { id: 'temple', name: 'Temple', kind: 'tent', u: 39, v: 13.5, provisional: false, genre: 'Black, pagan' },
+    { id: 'warzone', name: 'Warzone', kind: 'open', u: 5, v: 18.5, provisional: false, genre: 'Punk, hardcore' },
+    { id: 'valley', name: 'Valley', kind: 'open', u: 16.5, v: 24.5, provisional: false, genre: 'Stoner, doom, sludge' },
+    { id: 'riot', name: 'Riot', kind: 'tent', u: 8, v: 24, provisional: true, genre: 'Punk, crust' },
+    { id: 'abyss', name: 'Abyss', kind: 'tent', u: 23, v: 26, provisional: true, genre: 'Post-metal, atmo' },
+    { id: 'forge', name: 'Forge', kind: 'tent', u: 31, v: 17.5, provisional: true, genre: 'Thrash, heavy' },
+    { id: 'crypt', name: 'Crypt', kind: 'tent', u: 36, v: 22.5, provisional: true, genre: 'Doom, death old school' },
   ],
   hubs: [
-    { id: 'entree', name: 'Entrée', x: 22, y: 36 },
-    { id: 'hellcity', name: 'Hell City', x: 22, y: 30 },
-    { id: 'plaine', name: 'Plaine des Mainstages', x: 22, y: 17 },
-    { id: 'est', name: 'Carrefour est', x: 33, y: 16 },
-    { id: 'sudest', name: 'Carrefour sud-est', x: 32, y: 28 },
-    { id: 'ouest', name: 'Carrefour ouest', x: 12, y: 17 },
-    { id: 'sudouest', name: 'Carrefour sud-ouest', x: 11, y: 25 },
+    { id: 'entree', name: 'Entrée', u: 45, v: 11 },
+    { id: 'hellcity', name: 'Hellcity Square', u: 40, v: 15.5 },
+    { id: 'hellcity-sud', name: 'Hellcity sud', u: 41, v: 21 },
+    { id: 'carrefour-altar', name: 'Carrefour Altar', u: 34, v: 16 },
+    { id: 'plaine', name: 'Plaine des Mainstages', u: 26, v: 15.5 },
+    { id: 'avant-ms', name: 'Devant les Mainstages', u: 22, v: 13 },
+    { id: 'clairiere', name: 'Clairière', u: 30, v: 20.5 },
+    { id: 'carrefour-valley', name: 'Carrefour Valley', u: 22, v: 21.5 },
+    { id: 'bois-ouest', name: 'Bois ouest', u: 14, v: 19.5 },
+    { id: 'carrefour-warzone', name: 'Carrefour Warzone', u: 8.5, v: 18.5 },
+    { id: 'grande-roue', name: 'Grande roue', u: 14, v: 12.5 },
+    { id: 'chemin-nord', name: 'Chemin nord', u: 11, v: 16 },
+    { id: 'metal-corner', name: 'Metal Corner', u: 47, v: 27.5 },
+    { id: 'camping', name: 'Accès camping', u: 53, v: 34 },
   ],
   edges: [
     { a: 'entree', b: 'hellcity' },
-    { a: 'hellcity', b: 'plaine' },
+    { a: 'hellcity', b: 'carrefour-altar' },
+    { a: 'hellcity', b: 'temple' },
+    { a: 'hellcity', b: 'hellcity-sud' },
+    { a: 'altar', b: 'temple' },
+    { a: 'altar', b: 'carrefour-altar' },
+    { a: 'altar', b: 'plaine' },
+    { a: 'carrefour-altar', b: 'plaine' },
+    { a: 'carrefour-altar', b: 'forge' },
+    { a: 'carrefour-altar', b: 'clairiere' },
+    { a: 'plaine', b: 'avant-ms' },
     { a: 'plaine', b: 'ms1' },
-    { a: 'plaine', b: 'ms2' },
+    { a: 'avant-ms', b: 'ms1' },
+    { a: 'avant-ms', b: 'ms2' },
     { a: 'ms1', b: 'ms2' },
-    { a: 'plaine', b: 'est' },
-    { a: 'ms2', b: 'est' },
-    { a: 'est', b: 'warzone' },
-    { a: 'est', b: 'riot' },
-    { a: 'est', b: 'sudest' },
-    { a: 'sudest', b: 'valley' },
-    { a: 'sudest', b: 'abyss' },
-    { a: 'hellcity', b: 'sudest' },
-    { a: 'plaine', b: 'ouest' },
-    { a: 'ms1', b: 'ouest' },
-    { a: 'ouest', b: 'altar' },
-    { a: 'ouest', b: 'temple' },
-    { a: 'ouest', b: 'sudouest' },
-    { a: 'sudouest', b: 'forge' },
-    { a: 'sudouest', b: 'crypt' },
-    { a: 'hellcity', b: 'sudouest' },
+    { a: 'avant-ms', b: 'grande-roue' },
+    { a: 'grande-roue', b: 'chemin-nord' },
+    { a: 'chemin-nord', b: 'carrefour-warzone' },
+    { a: 'carrefour-warzone', b: 'warzone' },
+    { a: 'carrefour-warzone', b: 'riot' },
+    { a: 'carrefour-warzone', b: 'bois-ouest' },
+    { a: 'bois-ouest', b: 'valley' },
+    { a: 'bois-ouest', b: 'carrefour-valley' },
+    { a: 'carrefour-valley', b: 'valley' },
+    { a: 'carrefour-valley', b: 'abyss' },
+    { a: 'carrefour-valley', b: 'clairiere' },
+    { a: 'clairiere', b: 'forge' },
+    { a: 'clairiere', b: 'crypt' },
+    { a: 'crypt', b: 'hellcity-sud' },
+    { a: 'hellcity-sud', b: 'metal-corner' },
+    { a: 'metal-corner', b: 'camping' },
+  ],
+  pois: [
+    { id: 'eau-1', kind: 'eau', name: 'Point d’eau Warzone', u: 7, v: 20.5 },
+    { id: 'eau-2', kind: 'eau', name: 'Point d’eau Grande roue', u: 13, v: 11 },
+    { id: 'eau-3', kind: 'eau', name: 'Point d’eau Altar', u: 31.5, v: 13.5 },
+    { id: 'eau-4', kind: 'eau', name: 'Point d’eau Hellcity', u: 43, v: 19.5 },
+    { id: 'eau-5', kind: 'eau', name: 'Point d’eau Metal Corner', u: 50, v: 27 },
+    { id: 'wc-1', kind: 'wc', name: 'Toilettes Warzone', u: 9, v: 21 },
+    { id: 'wc-2', kind: 'wc', name: 'Toilettes Grande roue', u: 15.5, v: 11 },
+    { id: 'wc-3', kind: 'wc', name: 'Toilettes Mainstages', u: 31, v: 10.5 },
+    { id: 'wc-4', kind: 'wc', name: 'Toilettes Hellcity', u: 38, v: 18 },
+    { id: 'wc-5', kind: 'wc', name: 'Toilettes Valley', u: 19, v: 26.5 },
+    { id: 'wc-6', kind: 'wc', name: 'Toilettes Metal Corner', u: 51, v: 29.5 },
+    { id: 'secours-1', kind: 'secours', name: 'Poste de secours ouest', u: 11.5, v: 13.5 },
+    { id: 'secours-2', kind: 'secours', name: 'Poste de secours Hellcity', u: 38.5, v: 15 },
+    { id: 'secours-3', kind: 'secours', name: 'Poste de secours Metal Corner', u: 52, v: 31.5 },
+    { id: 'bar-1', kind: 'bar', name: 'Bar de la plaine', u: 24.5, v: 17 },
+    { id: 'bar-2', kind: 'bar', name: 'Bar du bois', u: 18, v: 27.5 },
+    { id: 'bar-3', kind: 'bar', name: 'Bar Hellcity', u: 44, v: 15.5 },
+    { id: 'bar-4', kind: 'bar', name: 'Bars du Metal Corner', u: 46, v: 25.5 },
+    { id: 'info', kind: 'info', name: 'Point infos, objets trouvés', u: 42.5, v: 17.5 },
   ],
 };
+
+export const POI_LABELS: Record<string, string> = { eau: 'Eau', wc: 'WC', secours: 'Secours', bar: 'Bars', info: 'Infos' };
 
 export function stageById(site: Site, id: string): Stage | undefined {
   return site.stages.find((s) => s.id === id);
 }
 
-function nodePos(site: Site, id: string): { x: number; y: number } {
+export function nodePoint(site: Site, id: string): Point {
   const n = site.stages.find((s) => s.id === id) ?? site.hubs.find((h) => h.id === id);
   if (!n) throw new Error(`Nœud inconnu : ${id}`);
-  return { x: n.x, y: n.y };
+  return { u: n.u, v: n.v };
+}
+
+export function nodeName(site: Site, id: string): string {
+  return (site.stages.find((s) => s.id === id) ?? site.hubs.find((h) => h.id === id))?.name ?? id;
 }
 
 /** Paths are never straight: crowds, barriers, bars. */
-const DETOUR = 1.15;
+const DETOUR = 1.1;
+
+export function metres(site: Site, a: Point, b: Point): number {
+  return Math.hypot(a.u - b.u, a.v - b.v) * site.metresPerUnit;
+}
 
 export interface Route {
   nodes: string[];
   metres: number;
 }
 
-/** Shortest walking route between two nodes (Dijkstra on the path network). */
-export function route(site: Site, from: string, to: string): Route {
-  if (from === to) return { nodes: [from], metres: 0 };
+function adjacency(site: Site) {
   const adj = new Map<string, { to: string; m: number }[]>();
   for (const e of site.edges) {
-    const a = nodePos(site, e.a);
-    const b = nodePos(site, e.b);
-    const m = Math.hypot(a.x - b.x, a.y - b.y) * site.metresPerTile * DETOUR;
+    const m = metres(site, nodePoint(site, e.a), nodePoint(site, e.b)) * DETOUR;
     if (!adj.has(e.a)) adj.set(e.a, []);
     if (!adj.has(e.b)) adj.set(e.b, []);
     adj.get(e.a)!.push({ to: e.b, m });
     adj.get(e.b)!.push({ to: e.a, m });
   }
+  return adj;
+}
+
+/** Shortest walking route between two nodes (Dijkstra on the path network). */
+export function route(site: Site, from: string, to: string): Route {
+  if (from === to) return { nodes: [from], metres: 0 };
+  const adj = adjacency(site);
   const dist = new Map<string, number>([[from, 0]]);
   const prev = new Map<string, string>();
   const open = new Set<string>([from]);
@@ -114,6 +166,20 @@ export function route(site: Site, from: string, to: string): Route {
   return { nodes, metres: Math.round(dist.get(to)!) };
 }
 
+/** Closest node of the path network to a free point (a GPS fix or a chosen start). */
+export function nearestNode(site: Site, p: Point): string {
+  let best = '';
+  let d = Infinity;
+  for (const n of [...site.stages, ...site.hubs]) {
+    const dn = Math.hypot(n.u - p.u, n.v - p.v);
+    if (dn < d) {
+      d = dn;
+      best = n.id;
+    }
+  }
+  return best;
+}
+
 export interface WalkConditions {
   /** Minutes since midnight of the festival day. */
   clock: number;
@@ -141,13 +207,17 @@ export function mudFactor(precipMm = 0): number {
 
 /** Time to leave a crowd before walking: longer in front of a Mainstage. */
 export function exitMinutes(site: Site, stageId: string): number {
-  return stageById(site, stageId)?.kind === 'main' ? 4 : 2;
+  const s = stageById(site, stageId);
+  if (!s) return 0;
+  return s.kind === 'main' ? 4 : 2;
 }
 
-/** Door-to-door minutes from one stage to another, rounded up. */
+export function minutesFor(m: number, cond: WalkConditions): number {
+  return m / (BASE_SPEED / (crowdFactor(cond.clock) * mudFactor(cond.precipMm)));
+}
+
+/** Door-to-door minutes from one node to another, rounded up. */
 export function walkMinutes(site: Site, from: string, to: string, cond: WalkConditions): number {
   if (from === to) return 0;
-  const r = route(site, from, to);
-  const speed = BASE_SPEED / (crowdFactor(cond.clock) * mudFactor(cond.precipMm));
-  return Math.ceil(r.metres / speed + exitMinutes(site, from));
+  return Math.ceil(minutesFor(route(site, from, to).metres, cond) + exitMinutes(site, from));
 }
