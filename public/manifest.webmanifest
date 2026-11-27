@@ -1,0 +1,17 @@
+{
+  "name": "Hellfest Twin",
+  "short_name": "Hellfest Twin",
+  "description": "Carte du site, programme, plan de journée et équipe. Fonctionne hors ligne.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#063C37",
+  "theme_color": "#EFE6D2",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

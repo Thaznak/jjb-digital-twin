@@ -1,30 +1,35 @@
-import type { ClubConfig } from '../engine/types';
+import type { Lineup, Person, Point } from '../engine';
 
-const KEY = 'jjb-digital-twin/config/v1';
+const KEY = 'hellfest-twin:v2';
 
-/** Local persistence of the user's own data. Stays in this browser only. */
-export function loadConfig(): ClubConfig | null {
+export interface Saved {
+  people: Person[];
+  activeId: string | null;
+  lineup: Lineup | null;
+  /** Last time friends' lists were refreshed (code import), ISO. */
+  lastSync: string | null;
+  /** Chosen starting point when there is no GPS. */
+  start: Point | null;
+}
+
+const EMPTY: Saved = { people: [], activeId: null, lineup: null, lastSync: null, start: null };
+
+function safe<T>(fn: () => T, fallback: T): T {
   try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
+export function load(): Saved {
+  return safe(() => {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as ClubConfig) : null;
-  } catch {
-    return null;
-  }
+    if (!raw) return { ...EMPTY };
+    return { ...EMPTY, ...(JSON.parse(raw) as Partial<Saved>) };
+  }, { ...EMPTY });
 }
 
-export function saveConfig(c: ClubConfig): boolean {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(c));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function clearConfig(): void {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    /* ignore */
-  }
+export function save(s: Saved): void {
+  safe(() => localStorage.setItem(KEY, JSON.stringify(s)), undefined);
 }
